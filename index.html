@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    
+    <meta name="google-site-verification" content="KS7JiEGM9pvzDzgrjb_ljiOBXo1zKmcD0Lg_rapEp04" />
+    
+    <meta name="description" content="On this website, you can watch all TV channels for free, live, without logging in.">
+    
+    <title>Premium TV</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --primary-color: #3b82f6;
+        --text-color: #f8fafc;
+        --error-color: #ef4444;
+        --success-color: #22c55e;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        overflow-x: hidden;
+        width: 100%
+      }
+
+      header {
+        background: linear-gradient(90deg, #1e3a8a 0, #3b82f6 100%);
+        padding: 20px 0;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        width: 100%
+      }
+
+      header h1 {
+        font-size: 22px;
+        margin: 0;
+        font-weight: 700
+      }
+
+      .container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center
+      }
+
+      #video-section {
+        width: 100%;
+        max-width: 800px;
+        margin-bottom: 20px;
+        scroll-margin-top: 90px
+      }
+
+      .player-wrapper {
+        width: 100%;
+        background: #000;
+        border-radius: 16px;
+        overflow: hidden;
+        aspect-ratio: 16/9;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, .7);
+        border: 1px solid #334155
+      }
+
+      video {
+        width: 100%;
+        height: 100%;
+        display: block
+      }
+
+      .status-bar {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 16px;
+        color: var(--primary-color);
+        font-weight: 600;
+        min-height: 24px;
+        transition: color 0.3s;
+      }
+
+      .search-box {
+        width: 100%;
+        max-width: 500px;
+        margin-bottom: 30px
+      }
+
+      #search-input {
+        width: 100%;
+        padding: 14px 20px;
+        border-radius: 30px;
+        border: 2px solid #334155;
+        background-color: var(--card-bg);
+        color: #fff;
+        font-size: 16px;
+        outline: 0;
+        transition: .3s
+      }
+
+      #search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 15px rgba(59, 130, 246, .3)
+      }
+
+      .channel-grid {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 20px;
+        padding-bottom: 50px
+      }
+
+      .channel-card {
+        background-color: var(--card-bg);
+        border-radius: 15px;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all .3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, .4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border: 1px solid transparent
+      }
+
+      .channel-card:hover {
+        transform: translateY(-5px);
+        background-color: #27354f;
+        border-color: var(--primary-color)
+      }
+
+      .channel-logo {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        background: #fff;
+        padding: 6px;
+        border-radius: 12px;
+        margin-bottom: 12px
+      }
+
+      .channel-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #cbd5e1;
+        line-height: 1.2;
+        word-wrap: break-word
+      }
+
+      @media (max-width:600px) {
+        .channel-grid {
+          grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+          gap: 12px
+        }
+
+        .channel-logo {
+          width: 65px;
+          height: 65px
+        }
+
+        .channel-name {
+          font-size: 12px
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Premium TV</h1>
+    </header>
+    <div class="container">
+      <div id="video-section">
+        <div class="player-wrapper">
+          <video id="video-player" controls autoplay playsinline></video>
+        </div>
+        <div class="status-bar" id="status-text">চ্যানেল নির্বাচন করুন</div>
+      </div>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="চ্যানেল খুঁজুন...">
+      </div>
+      <div id="loader" style="padding:20px">চ্যানেল লোড হচ্ছে...</div>
+      <div class="channel-grid" id="channel-grid"></div>
+    </div>
+    <script>
+      const M3U_URL = 'https://raw.githubusercontent.com/abusaeeidx/Mrgify-BDIX-IPTV/main/playlist.m3u';
+      const video = document.getElementById('video-player');
+      const grid = document.getElementById('channel-grid');
+      const statusText = document.getElementById('status-text');
+      const videoSection = document.getElementById('video-section');
+      const searchInput = document.getElementById('search-input');
+      let hls = null;
+      let channels = [];
+      
+      async function fetchPlaylist() {
+        try {
+          const response = await fetch(M3U_URL);
+          const data = await response.text();
+          parseM3U(data);
+        } catch (err) {
+          document.getElementById('loader').innerText = "প্লেলিস্ট লোড করতে ব্যর্থ!";
+        }
+      }
+
+      function parseM3U(data) {
+        const lines = data.split('\n');
+        let allChannelsRaw = [];
+        let obj = {};
+        lines.forEach(line => {
+          line = line.trim();
+          if (line.startsWith('#EXTINF:')) {
+            const logoMatch = line.match(/tvg-logo="(.*?)"/);
+            obj.logo = logoMatch ? logoMatch[1] : 'https://via.placeholder.com/150/1e293b/FFFFFF?text=TV';
+            obj.name = line.split(',').pop() || 'Unknown';
+          } else if (line && !line.startsWith('#')) {
+            obj.url = line;
+            allChannelsRaw.push(obj);
+            obj = {};
+          }
+        });
+        channels = allChannelsRaw.filter((ch, index) => index !== 0);
+        document.getElementById('loader').style.display = 'none';
+        renderUI(channels);
+      }
+
+      function renderUI(list) {
+        grid.innerHTML = '';
+        list.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'channel-card';
+          card.onclick = () => {
+            playStream(item.url, item.name);
+            videoSection.scrollIntoView({
+              behavior: 'smooth'
+            });
+          };
+          card.innerHTML = `
+            <img src="${item.logo}" class="channel-logo" onerror="this.src='https://via.placeholder.com/150/1e293b/FFFFFF?text=TV'">
+            <div class="channel-name">${item.name}</div>
+          `;
+          grid.appendChild(card);
+        });
+      }
+
+      function playStream(url, name) {
+        statusText.innerText = "লোড হচ্ছে: " + name;
+        statusText.style.color = "var(--primary-color)";
+
+        const handleError = () => {
+          statusText.innerText = "No signal - " + name;
+          statusText.style.color = "var(--error-color)";
+        };
+
+        video.onerror = handleError;
+
+        if (Hls.isSupported()) {
+          if (hls) hls.destroy();
+          hls = new Hls();
+          
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(e => console.log("Play error:", e));
+            statusText.innerText = "এখন চলছে: " + name;
+            statusText.style.color = "var(--success-color)";
+          });
+
+          hls.on(Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+              handleError();
+              hls.destroy();
+            }
+          });
+
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = url;
+          video.play().then(() => {
+            statusText.innerText = "এখন চলছে: " + name;
+            statusText.style.color = "var(--success-color)";
+          }).catch(handleError);
+        }
+      }
+
+      searchInput.addEventListener('input', (e) => {
+        const val = e.target.value.toLowerCase();
+        const filtered = channels.filter(c => c.name.toLowerCase().includes(val));
+        renderUI(filtered);
+      });
+      
+      fetchPlaylist();
+    </script>
+  </body>
+</html>
